@@ -1,0 +1,85 @@
+#оба метода
+import matplotlib.pyplot as plt
+from sympy.abc import t, x, y
+import numpy as np
+import sympy as sy
+import math
+    
+def phi(phi_prev):
+    if phi_prev != 0:
+        return sy.integrate(((1/sy.pi) * sy.cos(3*s+3*t)*phi_prev.subs({'t':s})), (s, 0, sy.pi)) + 2*sy.cos(3*t)
+    if phi_prev == 0:
+        return sy.integrate(((1/sy.pi) * sy.cos(3*s+3*t)*phi_prev), (s, 0, sy.pi)) + 2*sy.cos(3*t)
+
+def max_(eq1, eq2):
+    max_new = 0
+    for w in range(0, 24):
+        if (eq2.evalf(subs={'t':w*np.pi/24}) - eq1.evalf(subs={'t':w*np.pi/24})) > max_new:
+            max_new = eq2.evalf(subs={'t':w*np.pi/24}) - eq1.evalf(subs={'t':w*np.pi/24})
+    return max_new
+
+
+def K(sj, sk):
+    return (1/sy.pi) * sy.cos(3*sj+3*sk)
+
+def F(sj):
+    return 2*sy.cos(3*sj)
+
+#метод последовательных
+s = sy.Symbol('s')
+eps = 10**(-2)
+phi_0 = 0
+cnt = 0
+
+phi_prev = sy.radsimp(phi(phi_0))
+phi_next = sy.radsimp(phi(phi_prev))
+
+while (max_(phi_prev, phi_next) > eps):
+    phi_prev = sy.radsimp(phi_next)
+    phi_next = sy.radsimp(phi(phi_prev))
+    cnt+=1
+
+
+#метод СЛАУ    
+n = 100
+a = 0
+b = sy.pi
+matrix = [[0] * n for _ in range(n)]
+for i in range(0, n):
+    for j in range(0, n):
+        if i == j:
+            matrix[i][j] = 1
+f = [0 * n for _ in range(n)]
+            
+t0 = a
+s0 = a
+tn = b
+sn = b
+
+for j in range (0, n):
+    sj = j * sy.pi/n
+    for k in range (1, n-1):
+        sk = k * sy.pi/n 
+        sum_ = K(sj, sk) 
+        matrix[j][k] -= (sy.pi/n) * sum_
+    K0 = K(sj, s0)
+    Kn = K(sj, sn)
+    matrix[j][0] -= (sy.pi/n)*(0.5*K0)
+    matrix[j][n-1] -= (sy.pi/n)*(0.5*Kn)    
+    f[j] = F(sj)
+    
+M1 = np.array(matrix, dtype=float)
+V1 = np.array(f, dtype=float)
+y2 = np.linalg.solve(M1, V1)
+
+
+   
+x = np.linspace(0, np.pi, 100)
+y1 = list()
+for i in range (0, 100):
+    y1.append(phi_next.evalf(subs={'t':i*np.pi/100}))
+
+plt.plot(x, y1, color='g')
+plt.plot(x, y2, color='r')
+
+plt.show()
